@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Happiest Birthday, Shahbaz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #ffeae6 0, #ffd6ff 40%, #f3f0ff 100%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    /* SCENE WITH PERSPECTIVE */
+    .scene {
+      width: min(90vw, 420px);
+      height: min(90vw, 420px);
+      perspective: 1600px;
+      cursor: pointer;
+    }
+
+    /* FLIP CARD */
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.3, 1.4, 0.3, 1);
+    }
+
+    .card.flipping {
+      pointer-events: none;
+    }
+
+    .page {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      background: #fffdf6;
+      box-shadow:
+        0 0 0 3px #f5dcdc,
+        0 16px 40px rgba(0, 0, 0, 0.18);
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      padding: 28px 24px;
+      overflow: hidden;
+    }
+
+    /* We will reuse the same front DOM and just change innerHTML per page */
+    /* BASIC TYPOGRAPHY */
+
+    .title-main {
+      font-size: 28px;
+      text-transform: lowercase;
+      letter-spacing: 2px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .title-main span {
+      display: block;
+      font-size: 30px;
+    }
+
+    .subtext {
+      font-size: 11px;
+      text-align: center;
+      margin-top: 4px;
+      opacity: 0.7;
+    }
+
+    .center-text {
+      text-align: center;
+    }
+
+    .name-big {
+      font-size: 22px;
+      font-weight: 800;
+      margin-top: 8px;
+    }
+
+    .tiny {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .poem-lines {
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .bottom-note {
+      position: absolute;
+      bottom: 22px;
+      left: 24px;
+      right: 24px;
+      font-size: 11px;
+      text-align: center;
+      opacity: 0.8;
+    }
+
+    /* DOODLE ELEMENTS */
+
+    .doodle {
+      position: absolute;
+      border-radius: 999px;
+      opacity: 0.95;
+      mix-blend-mode: multiply;
+    }
+
+    .doodle-heart {
+      width: 40px;
+      height: 32px;
+      background: #ff6b81;
+      transform: rotate(-18deg);
+      clip-path: path(
+        "M20 32 L0 14 C0 6 6 0 13 0 C17 0 20 2 20 5 C20 2 23 0 27 0 C34 0 40 6 40 14 L20 32 Z"
+      );
+    }
+
+    .doodle-heart.small {
+      width: 26px;
+      height: 20px;
+    }
+
+    .doodle-squiggle {
+      width: 90px;
+      height: 24px;
+      background: transparent;
+      border-radius: 0;
+      border-width: 4px;
+      border-style: solid;
+      border-color: transparent #ff9f1c transparent #ff9f1c;
+      border-radius: 20px;
+      transform-origin: center;
+    }
+
+    .doodle-curve {
+      width: 70px;
+      height: 70px;
+      border-radius: 100px;
+      border: 3px solid #40c9a2;
+      border-color: #40c9a2 transparent transparent transparent;
+    }
+
+    .doodle-star {
+      width: 22px;
+      height: 22px;
+      background: #ffe66d;
+      clip-path: polygon(
+        50% 0%,
+        61% 35%,
+        98% 35%,
+        68% 57%,
+        79% 91%,
+        50% 70%,
+        21% 91%,
+        32% 57%,
+        2% 35%,
+        39% 35%
+      );
+      box-shadow: 0 0 8px #ffe66daa;
+    }
+
+    .doodle-line {
+      width: 80px;
+      height: 8px;
+      border-radius: 999px;
+      background: #9b5de5;
+    }
+
+    .doodle-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffbf69;
+      box-shadow: 0 0 8px #ffbf6988;
+    }
+
+    /* gentle float for some doodles */
+    .float {
+      animation: float 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes float {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-8px); }
+    }
+
+    /* PAGE COLOR THEMES */
+
+    .page-1-bg { background: #fffaf2; }
+    .page-2-bg { background: #fff6ff; }
+    .page-3-bg { background: #f3feff; }
+    .page-4-bg { background: #f8f5ff; }
+
+    /* HELPER */
+
+    .tap-hint {
+      position: absolute;
+      bottom: 10px;
+      right: 18px;
+      font-size: 10px;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 450px) {
+      .scene {
+        width: 92vw;
+        height: 92vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="card" id="card">
+      <div class="page page-1-bg" id="pageContent">
+        <!-- content will be injected with JS -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const card = document.getElementById("card");
+    const pageContent = document.getElementById("pageContent");
+
+    let page = 1;
+    const totalPages = 4;
+    let flipping = false;
+
+    /* soft flip sound: whoosh + light flip */
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playFlipSound() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      // soft whoosh
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = "triangle";
+      osc1.frequency.setValueAtTime(900, now);
+      osc1.frequency.linearRampToValueAtTime(450, now + 0.18);
+      gain1.gain.setValueAtTime(0.07, now);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.2);
+
+      // little flip pop
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(1500, now + 0.16);
+      gain2.gain.setValueAtTime(0.09, now + 0.16);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.16);
+      osc2.stop(now + 0.28);
+    }
+
+    document.addEventListener(
+      "click",
+      function firstTap() {
+        initAudio();
+        document.removeEventListener("click", firstTap);
+      },
+      { once: true }
+    );
+
+    function renderPage() {
+      pageContent.className = "page page-" + page + "-bg";
+      if (page === 1) {
+        pageContent.innerHTML = `
+          <div class="title-main">
+            happiest
+            <span>BIRTHDAY</span>
+          </div>
+          <div class="center-text name-big">Shahbaz</div>
+          <p class="subtext">
+            tap to open your colorful little universe.
+          </p>
+
+          <div class="bottom-note">
+            today belongs to you, your sky, your name, and every bright thing you became.
+          </div>
+
+          <!-- doodles -->
+          <div class="doodle doodle-heart" style="top:40px; left:18px;"></div>
+          <div class="doodle doodle-heart small" style="top:60px; right:34px; transform:rotate(12deg);"></div>
+
+          <div class="doodle doodle-squiggle float" style="top:20px; right:90px; transform:rotate(-14deg);"></div>
+          <div class="doodle doodle-squiggle" style="bottom:70px; left:40px; transform:rotate(18deg);"></div>
+
+          <div class="doodle doodle-curve" style="top:120px; left:-10px;"></div>
+          <div class="doodle doodle-curve" style="top:110px; right:-20px; transform:rotate(40deg); border-color:#ff5d8f transparent transparent transparent;"></div>
+
+          <div class="doodle doodle-star" style="top:26px; left:130px;"></div>
+          <div class="doodle doodle-star" style="top:160px; right:110px;"></div>
+
+          <div class="doodle doodle-line" style="bottom:34px; left:26px; background:#ff9f1c;"></div>
+          <div class="doodle doodle-line" style="top:190px; right:26px; background:#00b4d8; transform:rotate(-18deg);"></div>
+
+          <div class="doodle doodle-dot" style="top:80px; left:210px;"></div>
+          <div class="doodle doodle-dot" style="top:210px; left:80px;"></div>
+          <div class="doodle doodle-dot" style="bottom:90px; right:60px;"></div>
+
+          <div class="tap-hint">tap to flip ▶</div>
+        `;
+      } else if (page === 2) {
+        pageContent.innerHTML = `
+          <div class="center-text">
+            <div class="tiny">your name</div>
+            <div class="name-big">Shahbaz</div>
+            <div class="poem-lines">
+              a little royal bird,<br/>
+              born with quiet courage<br/>
+              and a sky already waiting.
+            </div>
+          </div>
+
+          <div class="bottom-note">
+            may your name always sound like that first morning your parents held you.
+          </div>
+
+          <!-- doodles -->
+          <div class="doodle doodle-heart" style="top:55px; right:24px; transform:rotate(10deg);"></div>
+          <div class="doodle doodle-heart small" style="bottom:50px; left:30px; transform:rotate(-8deg);"></div>
+
+          <div class="doodle doodle-curve" style="top:-10px; left:40px;"></div>
+          <div class="doodle doodle-curve" style="bottom:-30px; right:20px; transform:rotate(50deg); border-color:#ff9f1c transparent transparent transparent;"></div>
+
+          <div class="doodle doodle-squiggle float" style="top:26px; left:180px; transform:rotate(12deg);"></div>
+          <div class="doodle doodle-squiggle" style="bottom:90px; right:40px; transform:rotate(-20deg);"></div>
+
+          <div class="doodle doodle-star" style="top:90px; left:40px;"></div>
+          <div class="doodle doodle-star" style="bottom:60px; right:130px;"></div>
+
+          <div class="doodle doodle-line" style="top:190px; left:18px; background:#ff6b81;"></div>
+          <div class="doodle doodle-line" style="bottom:24px; right:18px; background:#40c9a2;"></div>
+
+          <div class="doodle doodle-dot" style="top:60px; left:210px;"></div>
+          <div class="doodle doodle-dot" style="top:150px; right:70px;"></div>
+          <div class="doodle doodle-dot" style="bottom:120px; left:90px;"></div>
+
+          <div class="tap-hint">tap to flip ▶</div>
+        `;
+      } else if (page === 3) {
+        pageContent.innerHTML = `
+          <div class="center-text">
+            <div class="title-main">
+              new level<br/><span>UNLOCKED</span>
+            </div>
+            <div class="poem-lines">
+              may this year bring soft mornings,<br/>
+              loud laughs, and tiny miracles<br/>
+              sneaking into ordinary days.
+            </div>
+          </div>
+
+          <div class="bottom-note">
+            you are so deeply loved, even in the quiet in‑between moments.
+          </div>
+
+          <!-- doodles -->
+          <div class="doodle doodle-heart small" style="top:34px; left:26px;"></div>
+          <div class="doodle doodle-heart" style="bottom:40px; right:20px; transform:rotate(-12deg);"></div>
+
+          <div class="doodle doodle-squiggle float" style="top:22px; right:70px; transform:rotate(-10deg);"></div>
+          <div class="doodle doodle-squiggle" style="bottom:78px; left:40px; transform:rotate(18deg);"></div>
+
+          <div class="doodle doodle-curve" style="top:110px; left:-10px; border-color:#00b4d8 transparent transparent transparent;"></div>
+          <div class="doodle doodle-curve" style="top:80px; right:-20px; transform:rotate(40deg); border-color:#9b5de5 transparent transparent transparent;"></div>
+
+          <div class="doodle doodle-star" style="top:36px; left:140px;"></div>
+          <div class="doodle doodle-star" style="bottom:70px; right:140px;"></div>
+
+          <div class="doodle doodle-line" style="top:190px; left:22px; background:#ff9f1c;"></div>
+          <div class="doodle doodle-line" style="bottom:24px; left:40px; background:#00bcd4; transform:rotate(-16deg);"></div>
+
+          <div class="doodle doodle-dot" style="top:70px; left:220px;"></div>
+          <div class="doodle doodle-dot" style="top:180px; right:60px;"></div>
+          <div class="doodle doodle-dot" style="bottom:110px; left:90px;"></div>
+
+          <div class="tap-hint">tap to flip ▶</div>
+        `;
+      } else if (page === 4) {
+        pageContent.innerHTML = `
+          <div class="center-text">
+            <div class="name-big">thank you, Shahbaz</div>
+            <div class="poem-lines">
+              for being the kind of person<br/>
+              who makes the world feel<br/>
+              a little softer and brighter.
+            </div>
+          </div>
+
+          <div class="bottom-note tiny">
+            drawn in pixels & love by your daughter.
+          </div>
+
+          <!-- doodles -->
+          <div class="doodle doodle-heart" style="top:40px; left:32px;"></div>
+          <div class="doodle doodle-heart small" style="top:60px; right:40px;"></div>
+
+          <div class="doodle doodle-squiggle" style="top:24px; right:110px; transform:rotate(-16deg);"></div>
+          <div class="doodle doodle-squiggle float" style="bottom:70px; left:40px; transform:rotate(18deg);"></div>
+
+          <div class="doodle doodle-curve" style="top:130px; left:-12px; border-color:#40c9a2 transparent transparent transparent;"></div>
+          <div class="doodle doodle-curve" style="bottom:-30px; right:10px; transform:rotate(40deg); border-color:#ff6b81 transparent transparent transparent;"></div>
+
+          <div class="doodle doodle-star" style="top:40px; left:150px;"></div>
+          <div class="doodle doodle-star" style="bottom:80px; right:140px;"></div>
+
+          <div class="doodle doodle-line" style="top:200px; left:26px; background:#ff9f1c;"></div>
+          <div class="doodle doodle-line" style="bottom:30px; right:26px; background:#9b5de5;"></div>
+
+          <div class="doodle doodle-dot" style="top:80px; left:220px;"></div>
+          <div class="doodle doodle-dot" style="top:180px; right:70px;"></div>
+          <div class="doodle doodle-dot" style="bottom:110px; left:96px;"></div>
+
+          <div class="tap-hint">tap to start again ⟳</div>
+        `;
+      }
+    }
+
+    function flipToNextPage() {
+      if (flipping) return;
+      flipping = true;
+      initAudio();
+      playFlipSound();
+
+      card.classList.add("flipping");
+      card.style.transform = "rotateY(180deg)";
+
+      setTimeout(() => {
+        page = page === totalPages ? 1 : page + 1;
+        renderPage();
+        card.style.transform = "rotateY(0deg)";
+      }, 380);
+
+      setTimeout(() => {
+        card.classList.remove("flipping");
+        flipping = false;
+      }, 750);
+    }
+
+    card.addEventListener("click", flipToNextPage);
+
+    // initial render
+    renderPage();
+  </script>
+</body>
+</html>
